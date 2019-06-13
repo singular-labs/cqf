@@ -27,9 +27,12 @@ CC = gcc -std=gnu11
 CXX = g++ -std=c++11
 LD= gcc -std=gnu11
 
-CXXFLAGS = -Wall $(DEBUG) $(PROFILE) $(OPT) $(ARCH) -m64 -I. -Iinclude
+IPATH = -I/usr/local/ssl/include
+LPATH= -L/usr/local/ssl/include -Wl,-R/usr/local/ssl/include
 
-LDFLAGS = $(DEBUG) $(PROFILE) $(OPT) -lpthread -lssl -lcrypto -lm
+CXXFLAGS = -Wall $(DEBUG) $(PROFILE) $(OPT) $(ARCH) $(IPATH) -m64 -I. -Iinclude
+
+LDFLAGS = $(DEBUG) $(PROFILE) $(OPT) $(LPATH) -lpthread -lssl -lcrypto -lm
 
 #
 # declaration of dependencies
