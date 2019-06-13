@@ -13,7 +13,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sched.h>
+#ifdef __linux__
 #include <linux/unistd.h>
+#elif defined(__sun)
+#include <sys/processor.h>
+#endif
 #include <sys/syscall.h>
 #include <errno.h>
 #include <time.h>

@@ -13,7 +13,11 @@
 #include <unistd.h>
 #include <sched.h>
 #include <sys/sysinfo.h>
+#ifdef __linux__
 #include <linux/unistd.h>
+#elif defined(__sun)
+#include <sys/processor.h>
+#endif
 #include <sys/syscall.h>
 #include <errno.h>
 
@@ -54,7 +58,11 @@ void pc_destructor(pc_t *pc)
 }
 	
 void pc_add(pc_t *pc, int64_t count) {
+#ifdef __linux__
 	int cpuid = sched_getcpu();
+#elif defined(__sun)
+	int cpuid = (int) getcpuid();
+#endif
 	uint32_t counter_id = cpuid % pc->num_counters;
 	int64_t cur_count =
 		__atomic_add_fetch(&pc->local_counters[counter_id].counter, count,
