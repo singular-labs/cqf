@@ -21,6 +21,11 @@
 #include "include/zipf.h"
 #include "include/gqf_wrapper.h"
 
+#if !defined(__linux__) || !defined(__GLIBC__)
+#define USE_XOROSHIRO128_STARSTAR 1
+#include "xoroshiro128starstar.c"
+#endif
+
 #ifndef  USE_MYRANDOM
 #define RFUN random
 #define RSEED srandom
@@ -182,7 +187,11 @@ typedef struct uniform_online_state {
 	unsigned int seed;
 	char *buf;
 	int STATELEN;
+#ifdef USE_XOROSHIRO128_STARSTAR
+	xoroshiro_seed rand_state;
+#else
 	struct random_data *rand_state;
+#endif
 } uniform_online_state;
 
 typedef struct zipf_params {
@@ -354,9 +363,13 @@ void *uniform_online_init(uint64_t maxoutputs, __uint128_t maxvalue, void *param
 	state->seed = time(NULL);
 	state->STATELEN = 256;
 	state->buf = (char *)calloc(256, sizeof(char));
+#ifdef USE_XOROSHIRO128_STARSTAR
+        init_seed((uint64_t) state->seed, state->rand_state);
+#else
 	state->rand_state = (struct random_data *)calloc(1, sizeof(struct random_data));
 
 	initstate_r(state->seed, state->buf, state->STATELEN, state->rand_state);
+#endif
 	return (void *)state;
 }
 
@@ -369,7 +382,11 @@ int uniform_online_gen_rand(void *_state, uint64_t noutputs, __uint128_t *output
 	for (i = 0; i < noutputs; i++) {
 		int32_t result;
 		for (j = 0; j < 4; j++) {
+#ifdef USE_XOROSHIRO128_STARSTAR
+			result = next(state->rand_state);
+#else
 			random_r(state->rand_state, &result);
+#endif
 			outputs[i] = (outputs[i] * RAND_MAX) + result;
 		}
 		outputs[i] = (1 * outputs[i]) % state->maxvalue;
@@ -389,9 +406,13 @@ void *uniform_online_duplicate(void *_state)
 	
 	newstate->buf = (char *)calloc(256, sizeof(char));
 	memcpy(newstate->buf, oldstate->buf, newstate->STATELEN);
+#ifdef USE_XOROSHIRO128_STARSTAR
+        init_seed((uint64_t) newstate->seed, newstate->rand_state);
+#else
 	newstate->rand_state = (struct random_data *)calloc(1, sizeof(struct random_data));
 
 	initstate_r(newstate->seed, newstate->buf, newstate->STATELEN, newstate->rand_state);
+#endif
 	return newstate;
 }
 
